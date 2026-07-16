@@ -61,6 +61,8 @@ jobs:
 
       - name: Package Linux AppImage
         working-directory: vesktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm exec electron-builder --linux AppImage --publish always
 
       - name: Upload AppImage as workflow artifact
