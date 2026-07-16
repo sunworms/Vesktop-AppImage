@@ -6,7 +6,7 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: write # needed to publish the GitHub Release
+  contents: write
 
 jobs:
   build:
@@ -63,11 +63,17 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm exec electron-builder --linux AppImage --publish always
 
+      # --- NEW STEP: Rename the output to exactly Vesktop.AppImage ---
+      - name: Rename AppImage
+        working-directory: vesktop/dist
+        run: |
+          mv *.AppImage Vesktop.AppImage
+
       - name: Upload AppImage as workflow artifact
         uses: actions/upload-artifact@v4
         with:
           name: Vesktop-AppImage-${{ steps.vars.outputs.sha_short }}
-          path: vesktop/dist/*.AppImage
+          path: vesktop/dist/Vesktop.AppImage
           if-no-files-found: error
 
       - name: Publish/refresh "latest" release
@@ -77,10 +83,10 @@ jobs:
           name: "Vesktop AppImage (built from ${{ steps.vars.outputs.sha_short }})"
           body: |
             Automatically built from Vencord/Vesktop commit
-            [`${{ steps.vars.outputs.sha_short }}`](https://github.com/Vencord/Vesktop/commit/${{ steps.vars.outputs.sha }}).
+            [`${{ steps.vars.outputs.sha_short }}`](https://github.com/Vencord/Vesktop/commit/${{ secrets.vars.outputs.sha }}).
 
             This release is refreshed on every workflow run.
-          files: vesktop/dist/*.AppImage
+          files: vesktop/dist/Vesktop.AppImage
           make_latest: true
 
       - name: Record build status (keeps the repo active)
