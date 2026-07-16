@@ -1,10 +1,8 @@
 name: Build Vesktop AppImage
 
 on:
-  # Rebuild automatically once a day so the AppImage tracks the latest commit
   schedule:
     - cron: "0 6 * * *"
-  # Let you trigger a build manually from the Actions tab
   workflow_dispatch: {}
 
 permissions:
@@ -38,7 +36,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 26
           cache: pnpm
           cache-dependency-path: vesktop/pnpm-lock.yaml
 
