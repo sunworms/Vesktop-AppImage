@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   build:
@@ -29,6 +30,17 @@ jobs:
         run: |
           echo "sha_short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Check if commit already built
+        id: cache-check
+        uses: actions/cache@v4
+        with:
+          path: vesktop/dist
+          key: vesktop-build-${{ steps.vars.outputs.sha }}
+
+      - name: Cancel if no new commits
+        if: steps.cache-check.outputs.cache-hit == 'true'
+        uses: andymckay/cancel-action@0.5
 
       - name: Enable Corepack (for pnpm)
         run: corepack enable
@@ -63,7 +75,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm exec electron-builder --linux AppImage --publish always
 
-      # --- NEW STEP: Rename the output to exactly Vesktop.AppImage ---
       - name: Rename AppImage
         working-directory: vesktop/dist
         run: |
