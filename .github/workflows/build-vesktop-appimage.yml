@@ -1,0 +1,108 @@
+name: Build Vesktop AppImage
+
+on:
+  # Rebuild automatically once a day so the AppImage tracks the latest commit
+  schedule:
+    - cron: "0 6 * * *"
+  # Let you trigger a build manually from the Actions tab
+  workflow_dispatch: {}
+
+permissions:
+  contents: write # needed to publish the GitHub Release
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v4
+        with:
+          path: repo
+
+      - name: Checkout latest Vesktop source
+        uses: actions/checkout@v4
+        with:
+          repository: Vencord/Vesktop
+          path: vesktop
+
+      - name: Get commit info
+        id: vars
+        working-directory: vesktop
+        run: |
+          echo "sha_short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Enable Corepack (for pnpm)
+        run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: vesktop/pnpm-lock.yaml
+
+      - name: Install pnpm (version pinned in package.json)
+        working-directory: vesktop
+        run: corepack prepare --activate
+
+      # electron-builder's AppImage step needs libfuse2 on newer Ubuntu runners
+      - name: Install AppImage build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfuse2
+
+      - name: Install dependencies
+        working-directory: vesktop
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Vesktop
+        working-directory: vesktop
+        run: pnpm build
+
+      - name: Package Linux AppImage
+        working-directory: vesktop
+        run: pnpm exec electron-builder --linux AppImage
+
+      - name: Upload AppImage as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Vesktop-AppImage-${{ steps.vars.outputs.sha_short }}
+          path: vesktop/dist/*.AppImage
+          if-no-files-found: error
+
+      - name: Publish/refresh "latest" release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Vesktop AppImage (built from ${{ steps.vars.outputs.sha_short }})"
+          body: |
+            Automatically built from Vencord/Vesktop commit
+            [`${{ steps.vars.outputs.sha_short }}`](https://github.com/Vencord/Vesktop/commit/${{ steps.vars.outputs.sha }}).
+
+            This release is refreshed on every workflow run.
+          files: vesktop/dist/*.AppImage
+          make_latest: true
+
+      - name: Record build status (keeps the repo active)
+        working-directory: repo
+        run: |
+          mkdir -p .status
+          cat > .status/last-build.md <<EOF
+          # Last build
+
+          - Ran: $(date -u +"%Y-%m-%d %H:%M UTC")
+          - Vesktop commit: [\`${{ steps.vars.outputs.sha_short }}\`](https://github.com/Vencord/Vesktop/commit/${{ steps.vars.outputs.sha }})
+          - Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EOF
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .status/last-build.md
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: record build $(date -u +%Y-%m-%d)"
+            git push
+          fi
