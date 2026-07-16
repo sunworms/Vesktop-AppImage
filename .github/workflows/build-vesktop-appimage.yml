@@ -46,7 +46,6 @@ jobs:
         working-directory: vesktop
         run: corepack prepare --activate
 
-      # electron-builder's AppImage step needs libfuse2 on newer Ubuntu runners
       - name: Install AppImage build dependencies
         run: |
           sudo apt-get update
@@ -62,7 +61,7 @@ jobs:
 
       - name: Package Linux AppImage
         working-directory: vesktop
-        run: pnpm exec electron-builder --linux AppImage
+        run: pnpm exec electron-builder --linux AppImage --publish always
 
       - name: Upload AppImage as workflow artifact
         uses: actions/upload-artifact@v4
