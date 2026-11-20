@@ -1,5 +1,5 @@
 # Last build
 
-- Ran: 2026-11-17 15:22 UTC
-- Vesktop commit: [`a3bedf0`](https://github.com/Vencord/Vesktop/commit/a3bedf0865190d9803507a2bb173e59afdbd425d)
-- Workflow run: https://github.com/sunworms/Vesktop-AppImage/actions/runs/44113314496
+- Ran: 2026-11-20 14:45 UTC
+- Vesktop commit: [`b989d81`](https://github.com/Vencord/Vesktop/commit/b989d8104c1adef8e963eaf7b538df26380bffb5)
+- Workflow run: https://github.com/sunworms/Vesktop-AppImage/actions/runs/44756365688
